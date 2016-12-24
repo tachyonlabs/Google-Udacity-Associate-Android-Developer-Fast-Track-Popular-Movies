@@ -1,5 +1,7 @@
 package com.tachyonlabs.popularmovies.utiities;
 
+import com.tachyonlabs.popularmovies.models.Movie;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -9,7 +11,7 @@ import android.content.Context;
 public class TmdbJsonUtils {
     private static final String TAG = TmdbJsonUtils.class.getSimpleName();
 
-    public static String[] getPosterUrlsFromJson(Context context, String moviesJsonStr) throws JSONException {
+    public static Movie[] getPosterUrlsFromJson(Context context, String moviesJsonStr) throws JSONException {
 
 //        /* Weather information. Each day's forecast info is an element of the "list" array */
 //        final String OWM_LIST = "list";
@@ -27,17 +29,22 @@ public class TmdbJsonUtils {
 //        final String OWM_MESSAGE_CODE = "cod";
 //
         /* String array to hold each day's weather String */
-        String temp;
 
         JSONObject movieDataJson = new JSONObject(moviesJsonStr);
 
         JSONArray resultsArray = movieDataJson.getJSONArray("results");
 
-        String[] posterUrls = new String[resultsArray.length()];
+        Movie[] movies = new Movie[resultsArray.length()];
 
         for (int i = 0; i < resultsArray.length(); i++) {
+            Movie movie = new Movie();
             JSONObject result = resultsArray.getJSONObject(i);
-            posterUrls[i] = result.getString("poster_path");
+            movie.setTitle(result.getString("title"));
+            movie.setOverview(result.getString("overview"));
+            movie.setPosterUrl(result.getString("poster_path"));
+            movie.setReleaseDate(result.getString("release_date"));
+            movie.setUserRating(String.valueOf(result.getDouble("vote_average")));
+            movies[i] = movie;
         }
 //            String date;
 //            String highAndLow;
@@ -81,6 +88,6 @@ public class TmdbJsonUtils {
 //            parsedWeatherData[i] = date + " - " + description + " - " + highAndLow;
 //        }
 
-        return posterUrls;
+        return movies;
     }
 }

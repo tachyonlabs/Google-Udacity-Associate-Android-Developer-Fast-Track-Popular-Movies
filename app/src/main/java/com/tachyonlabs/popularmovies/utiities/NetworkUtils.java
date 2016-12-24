@@ -11,11 +11,11 @@ import java.util.Scanner;
 
 public class NetworkUtils {
     private static final String TAG = NetworkUtils.class.getSimpleName();
-    private static final String POPULAR_MOVIES_BASE_URL = "http://api.themoviedb.org/3/movie/popular";
+    private static final String TMDB_BASE_URL = "http://api.themoviedb.org/3/movie/";
     final static String API_KEY_PARAM = "api_key";
 
-    public static URL buildUrl(String tmdbApiKey) {
-        Uri builtUri = Uri.parse(POPULAR_MOVIES_BASE_URL).buildUpon()
+    public static URL buildUrl(String sortOrder, String tmdbApiKey) {
+        Uri builtUri = Uri.parse(TMDB_BASE_URL + sortOrder).buildUpon()
                 .appendQueryParameter(API_KEY_PARAM, tmdbApiKey)
                 .build();
 

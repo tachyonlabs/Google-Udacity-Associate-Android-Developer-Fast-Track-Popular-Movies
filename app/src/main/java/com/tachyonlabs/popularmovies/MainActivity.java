@@ -1,8 +1,12 @@
 package com.tachyonlabs.popularmovies;
 
+import com.tachyonlabs.popularmovies.PosterAdapter.PosterAdapterOnClickHandler;
+import com.tachyonlabs.popularmovies.models.Movie;
 import com.tachyonlabs.popularmovies.utiities.NetworkUtils;
 import com.tachyonlabs.popularmovies.utiities.TmdbJsonUtils;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.AsyncTask;
@@ -11,14 +15,20 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.net.URL;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements PosterAdapterOnClickHandler {
     private static final String TAG = MainActivity.class.getSimpleName();
+    private static final String POPULAR = "popular";
+    private static final String TOP_RATED = "top_rated";
 
     private RecyclerView mRecyclerView;
     private PosterAdapter mPosterAdapter;
@@ -29,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        String sortOrder = getSharedPreferencesSettings();
         mRecyclerView = (RecyclerView) findViewById(R.id.rv_posters);
 
         tvErrorMessageDisplay = (TextView) findViewById(R.id.tv_error_message_display);
@@ -39,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
 
         // COMPLETED (40) Use setHasFixedSize(true) on mRecyclerView to designate that all items in the list will have the same size
         //mRecyclerView.setHasFixedSize(true);
-        mPosterAdapter = new PosterAdapter();
+        mPosterAdapter = new PosterAdapter(this);
         mRecyclerView.setAdapter(mPosterAdapter);
         /*
          * The ProgressBar that will indicate to the user that we are loading data. It will be
@@ -51,18 +61,32 @@ public class MainActivity extends AppCompatActivity {
         pbLoadingIndicator = (ProgressBar) findViewById(R.id.pb_loading_indicator);
 
         /* Once all of our views are setup, we can load the weather data. */
-        loadPosters();
+        loadPosters(sortOrder);
     }
 
-    private void loadPosters() {
+    public String getSharedPreferencesSettings() {
+        SharedPreferences mSettings = this.getSharedPreferences("Settings", 0);
+        return mSettings.getString("sortOrder", POPULAR);
+    }
+
+    @Override
+    public void onClick(Movie movie) {
+        Intent intent = new Intent(this, DetailActivity.class);
+        intent.putExtra("movie", movie);
+        intent.putExtra("posters_base_url", PosterAdapter.POSTERS_BASE_URL);
+        intent.putExtra("poster_width", PosterAdapter.POSTER_WIDTH);
+        startActivity(intent);
+    }
+
+    private void loadPosters(String sortOrder) {
         showPosters();
 
         //String location = SunshinePreferences.getPreferredWeatherLocation(this);
         //new FetchWeatherTask().execute(location);
-        new FetchPostersTask().execute("dummy");
+        new FetchPostersTask().execute(sortOrder);
     }
 
-    public class FetchPostersTask extends AsyncTask<String, Void, String[]> {
+    public class FetchPostersTask extends AsyncTask<String, Void, Movie[]> {
 
         @Override
         protected void onPreExecute() {
@@ -71,23 +95,20 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        protected String[] doInBackground(String... params) {
+        protected Movie[] doInBackground(String... params) {
             String tmdbApiKey = getApiKey();
-//            /* If there's no zip code, there's nothing to look up. */
-//            if (params.length == 0) {
-//                return null;
-//            }
+            String sortOrder = params[0];
 
-            URL postersRequestUrl = NetworkUtils.buildUrl(tmdbApiKey);
+            URL postersRequestUrl = NetworkUtils.buildUrl(sortOrder, tmdbApiKey);
 
             try {
                 String jsonTmdbResponse = NetworkUtils
                         .getResponseFromHttpUrl(postersRequestUrl);
 
-                String[] posterUrlsFromJson = TmdbJsonUtils
+                Movie[] moviesFromJson = TmdbJsonUtils
                         .getPosterUrlsFromJson(MainActivity.this, jsonTmdbResponse);
 
-                return posterUrlsFromJson;
+                return moviesFromJson;
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -96,24 +117,39 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        protected void onPostExecute(String[] posterUrls) {
+        protected void onPostExecute(Movie[] movies) {
             pbLoadingIndicator.setVisibility(View.INVISIBLE);
-            if (posterUrls != null) {
-                Log.d(TAG, posterUrls[0]);
+            if (movies != null) {
                 showPosters();
-                // COMPLETED (45) Instead of iterating through every string, use mForecastAdapter.setWeatherData and pass in the weather data
-                /*
-                 * Iterate through the array and append the Strings to the TextView. The reason why we add
-                 * the "\n\n\n" after the String is to give visual separation between each String in the
-                 * TextView. Later, we'll learn about a better way to display lists of data.
-                 */
-                mPosterAdapter.setPosterData(posterUrls);
+                mPosterAdapter.setPosterData(movies);
             } else {
                 showErrorMessage("onPostExecute returned null");
             }
         }
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        /* Use AppCompatActivity's method getMenuInflater to get a handle on the main_menu inflater */
+        MenuInflater inflater = getMenuInflater();
+        /* Use the inflater's inflate method to inflate our main_menu layout to this main_menu */
+        inflater.inflate(R.menu.main_menu, menu);
+        /* Return true so that the main_menu is displayed in the Toolbar */
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.action_settings) {
+            // COMPLETED (46) Instead of setting the text to "", set the adapter to null before refreshing
+            Toast.makeText(getApplicationContext(), "settings", Toast.LENGTH_SHORT).show();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
     private void showPosters() {
         /* First, make sure the error is invisible */
         tvErrorMessageDisplay.setVisibility(View.INVISIBLE);
