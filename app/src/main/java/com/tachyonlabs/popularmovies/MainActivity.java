@@ -2,15 +2,17 @@ package com.tachyonlabs.popularmovies;
 
 import com.tachyonlabs.popularmovies.PosterAdapter.PosterAdapterOnClickHandler;
 import com.tachyonlabs.popularmovies.models.Movie;
-import com.tachyonlabs.popularmovies.utiities.NetworkUtils;
-import com.tachyonlabs.popularmovies.utiities.TmdbJsonUtils;
+import com.tachyonlabs.popularmovies.utilities.NetworkUtils;
+import com.tachyonlabs.popularmovies.utilities.TmdbJsonUtils;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -21,7 +23,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.net.URL;
 
@@ -39,11 +40,9 @@ public class MainActivity extends AppCompatActivity implements PosterAdapterOnCl
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        String sortOrder = getSharedPreferencesSettings();
+
         mRecyclerView = (RecyclerView) findViewById(R.id.rv_posters);
-
         tvErrorMessageDisplay = (TextView) findViewById(R.id.tv_error_message_display);
-
         GridLayoutManager layoutManager = new GridLayoutManager(this, 2);
         mRecyclerView.setLayoutManager(layoutManager);
 
@@ -60,13 +59,20 @@ public class MainActivity extends AppCompatActivity implements PosterAdapterOnCl
          */
         pbLoadingIndicator = (ProgressBar) findViewById(R.id.pb_loading_indicator);
 
-        /* Once all of our views are setup, we can load the weather data. */
+        String sortOrder = getSortOrderSetting();
         loadPosters(sortOrder);
     }
 
-    public String getSharedPreferencesSettings() {
+    public String getSortOrderSetting() {
         SharedPreferences mSettings = this.getSharedPreferences("Settings", 0);
         return mSettings.getString("sortOrder", POPULAR);
+    }
+
+    public void saveSortOrderSetting(String sortOrder) {
+        SharedPreferences mSettings = this.getSharedPreferences("Settings", 0);
+        SharedPreferences.Editor editor = mSettings.edit();
+        editor.putString("sortOrder", sortOrder);
+        editor.apply();
     }
 
     @Override
@@ -141,15 +147,49 @@ public class MainActivity extends AppCompatActivity implements PosterAdapterOnCl
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-
         if (id == R.id.action_settings) {
-            // COMPLETED (46) Instead of setting the text to "", set the adapter to null before refreshing
-            Toast.makeText(getApplicationContext(), "settings", Toast.LENGTH_SHORT).show();
+            settingsMenu();
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
+
+    private void settingsMenu() {
+        String sortOrder = getSortOrderSetting();
+        final String previousSortOrder = sortOrder;
+        int currentSetting = sortOrder.equals(POPULAR) ? 0 : 1;
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        builder.setTitle("Select poster sort order").setSingleChoiceItems(R.array.sort_orders, currentSetting,
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                    }
+                });
+
+        builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                AlertDialog alert = (AlertDialog) dialog;
+                int selectedPosition = alert.getListView().getCheckedItemPosition();
+                String sortOrder = new String[] {POPULAR, TOP_RATED}[selectedPosition];
+                if (!sortOrder.equals(previousSortOrder)) {
+                    saveSortOrderSetting(sortOrder);
+                    loadPosters(sortOrder);
+                }
+            }
+        });
+
+        builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // They canceled, don't do anything
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
     private void showPosters() {
         /* First, make sure the error is invisible */
         tvErrorMessageDisplay.setVisibility(View.INVISIBLE);

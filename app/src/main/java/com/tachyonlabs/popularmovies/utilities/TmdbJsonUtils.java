@@ -1,4 +1,4 @@
-package com.tachyonlabs.popularmovies.utiities;
+package com.tachyonlabs.popularmovies.utilities;
 
 import com.tachyonlabs.popularmovies.models.Movie;
 
