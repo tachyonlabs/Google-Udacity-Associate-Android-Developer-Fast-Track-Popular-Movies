@@ -11,17 +11,11 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 public class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.PosterAdapterViewHolder> {
-    private static final String TAG = PosterAdapter.class.getSimpleName();
     public static final String POSTERS_BASE_URL = "http://image.tmdb.org/t/p/";
     public static final String POSTER_WIDTH = "w185/";
-
-    private Movie[] mMovies;
-
+    private static final String TAG = PosterAdapter.class.getSimpleName();
     final private PosterAdapterOnClickHandler mClickHandler;
-
-    public interface PosterAdapterOnClickHandler {
-        void onClick(Movie clickedItem);
-    }
+    private Movie[] mMovies;
 
     public PosterAdapter(PosterAdapterOnClickHandler posterAdapterOnClickHandler) {
         mClickHandler = posterAdapterOnClickHandler;
@@ -60,6 +54,10 @@ public class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.PosterAdap
         notifyDataSetChanged();
     }
 
+    public interface PosterAdapterOnClickHandler {
+        void onClick(Movie clickedItem);
+    }
+
     public class PosterAdapterViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         public final ImageView ivPoster;
 
@@ -68,6 +66,7 @@ public class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.PosterAdap
             ivPoster = (ImageView) itemView.findViewById(R.id.iv_poster);
             itemView.setOnClickListener(this);
         }
+
         @Override
         public void onClick(View view) {
             Movie movie = mMovies[getAdapterPosition()];

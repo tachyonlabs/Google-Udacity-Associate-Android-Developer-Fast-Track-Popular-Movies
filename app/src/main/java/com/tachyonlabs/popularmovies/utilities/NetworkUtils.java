@@ -10,11 +10,12 @@ import java.net.URL;
 import java.util.Scanner;
 
 public class NetworkUtils {
+    final static String API_KEY_PARAM = "api_key";
     private static final String TAG = NetworkUtils.class.getSimpleName();
     private static final String TMDB_BASE_URL = "http://api.themoviedb.org/3/movie/";
-    final static String API_KEY_PARAM = "api_key";
 
     public static URL buildUrl(String sortOrder, String tmdbApiKey) {
+        // build URL to return TMDb data in popular or top-rated sort order as desired
         Uri builtUri = Uri.parse(TMDB_BASE_URL + sortOrder).buildUpon()
                 .appendQueryParameter(API_KEY_PARAM, tmdbApiKey)
                 .build();
@@ -29,6 +30,7 @@ public class NetworkUtils {
     }
 
     public static String getResponseFromHttpUrl(URL url) throws IOException {
+        // get TMDb JSON data
         HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
         try {
             InputStream in = urlConnection.getInputStream();
